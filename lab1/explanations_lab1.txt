@@ -17,6 +17,7 @@ address (0x2A) and subtracted from the leaked address to get the address of prog
 
 Part 3:
 
+In this part, we take advantage of the buffer overflow vulnerability to execute our shellcode. 
 We create a buffer that contains our shellcode and the address of programName, the rest padded
 with NOPs. We place the &programName at RIP, so when the program returns, it will jump to the
 shellcode and run it. This is because the shellcode is placed at the address of programName, 
@@ -29,6 +30,9 @@ Our malicious buffer looks like this:
     | shellcode | NOPs | &programName | NOPs |
 
 Part 4:
+
+Here we take advantage of the double free vulnerability to redirect execution to our shellcode when
+the wrong variable is freed, by creating fake tags.
 
 We create a buffer that will be copied into p, which is structured as follows:
 
