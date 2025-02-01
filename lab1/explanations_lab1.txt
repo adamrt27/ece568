@@ -53,3 +53,29 @@ q = p.
 
 This means when the program returns, it reads the address in RIP, goes to p, which jumps to the 
 shellcode, and runs it.
+
+Part 5:
+
+The vulnerability stems from snprintf(buffer, BUFFER_LEN, args), where user-controlled args is used 
+directly as the format string. This allows memory leaks (%x) and arbitrary memory writes (%hn). We 
+exploit this by injecting shellcode and using format specifiers (%_x and %_$hn) to overwrite the return 
+address, redirecting execution to our shellcode.
+
+Payload Structure: Format String | Return Addresses | Shellcode
+
+- The return address we want to overwrite is stored at 0x56820ce0, and we redirect execution to
+our shellcode is stored at 0x56820ce0, which is inside alginedArgs buffer.
+
+- Format string writes happen in 2-byte chunks. We use %_x's to prints out enough characters 
+that represent the 2-byte values that we want to write. We write to memory using %hn.
+
+- The format string "aaaaaa%3290x%10$hn%18850x%11$hn" is 31 chars + null byte = 32 bytes, meaning it is
+8-byte memory aligned. The extra characters at the beginning are padding to make it 8-byte aligned.
+
+- There are two parts of the return addresses in the payload: the bottom (0x56820ec8) and the address
+2 bytes above that (0x56820eca). This is so that when we write, we're writing the 2 bytes to those locations.
+Also, these return addresses are zero-padded in upper 32 bits using empty strings (null terminator considered).
+
+- The shellcode is appended at the end of the payload to avoid the possibility of the exploit
+not working properly due to changing shellcode length, which might cause memory misalignment.
+
