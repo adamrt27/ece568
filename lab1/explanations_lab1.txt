@@ -1,0 +1,55 @@
+#Adam Taback, 1008945778, adam.taback@mail.utoronto.ca
+#Seung Jae Yang, 1007171613, seungjae.yang@mail.utoronto.ca
+
+Part 1:
+
+We modified exploit1.c by adding an extra newline (\n) character at the end of args[0].
+This means programName in target1.c does not have a terminating character ('\0'), so when
+it is printed, printf keeps reading up the stack until it reaches a '\0'. The thing after
+it in the stack is secretBuffer, so that is read after programName, and produces the output.
+
+Part 2:
+
+We make arg[0] have 10 chars, so no terminating character is in programName. This means when
+when it is printed, the program keeps going until it sees a terminating character and prints
+out another memory addresses stored in the stack. We then calculated the offset from that 
+address (0x2A) and subtracted from the leaked address to get the address of programName.
+
+Part 3:
+
+We create a buffer that contains our shellcode and the address of programName, the rest padded
+with NOPs. We place the &programName at RIP, so when the program returns, it will jump to the
+shellcode and run it. This is because the shellcode is placed at the address of programName, 
+as the buffer is copied into programName. To place &programName at RIP, we calculated the offset,
+which is &programName - (address stored in RIP), using GDB.
+
+Our malicious buffer looks like this:
+
+&programName          RIP
+    | shellcode | NOPs | &programName | NOPs |
+
+Part 4:
+
+We create a buffer that will be copied into p, which is structured as follows:
+
+p                                 q
+| 8B fake tag 1 | shellcode + NOP | 8B fake tag 2 |
+
+Here is the structure of the fake tags:
+
+fake tag 1 (p):
+    l: JMP to shellcode + NOPs
+    r: NOPs + FREEBIT
+
+fake tag 2 (q):
+    l: &p
+    r: &RIP
+
+Then when free is called on q the second time, it consolidates left, causing the following: 
+
+p->r = q->r == &RIP
+(q->r)->l == &RIP (as l is just offset 0) = p 
+q = p. 
+
+This means when the program returns, it reads the address in RIP, goes to p, which jumps to the 
+shellcode, and runs it.
