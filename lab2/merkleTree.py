@@ -61,10 +61,7 @@ class MerkleTree:
 		self.tree_levels = self.build_tree(values)  # Store full tree structure
 
 	def build_tree(self, values):
-		"""Builds a Merkle Tree from leaf values and returns levels of the tree.
-		For an odd number of nodes at a level, the last node is hashed alone,
-		rather than duplicating it.
-		"""
+		"""Builds a Merkle Tree from leaf values and returns levels of the tree."""
 		if not values:
 			return []
 
@@ -91,6 +88,85 @@ class MerkleTree:
 	def get_root(self):
 		"""Returns the Merkle Root."""
 		return self.tree_levels[-1][0] if self.tree_levels else None
+
+	def get_parent(self, level, index):
+		"""
+		Returns the parent's hash value for the node at (level, index).
+		
+		Parameters:
+			level (int): The current level of the node (0 = leaves).
+			index (int): The index of the node in that level.
+		
+		Returns:
+			The parent's hash (a hex string) if it exists, or None if the node is the root.
+		"""
+		# If the node is at the root level, it has no parent.
+		if level >= len(self.tree_levels) - 1:
+			return None
+		
+		parent_level = level + 1
+		parent_index = index // 2  # each parent's index is the integer division of child's index by 2.
+		return self.tree_levels[parent_level][parent_index]
+
+	def get_left_child(self, level, index):
+		"""
+		Returns the left child's hash value for the node at (level, index).
+		
+		Parameters:
+			level (int): The current level of the node (level > 0, since leaves have no children).
+			index (int): The index of the node in that level.
+		
+		Returns:
+			The left child's hash (a hex string) if it exists, or None.
+		"""
+		# Leaves (level 0) do not have children.
+		if level == 0:
+			return None
+		
+		child_level = level - 1
+		left_index = index * 2
+		if left_index < len(self.tree_levels[child_level]):
+			return self.tree_levels[child_level][left_index]
+		return None
+
+	def get_right_child(self, level, index):
+		"""
+		Returns the right child's hash value for the node at (level, index).
+		
+		Parameters:
+			level (int): The current level of the node (level > 0, since leaves have no children).
+			index (int): The index of the node in that level.
+		
+		Returns:
+			The right child's hash (a hex string) if it exists, or None.
+			(This can be None if the node was formed from a single odd child.)
+		"""
+		if level == 0:
+			return None
+		
+		child_level = level - 1
+		right_index = index * 2 + 1
+		if right_index < len(self.tree_levels[child_level]):
+			return self.tree_levels[child_level][right_index]
+		return None
+
+	def get_children(self, level, index):
+		"""
+		Returns a tuple of (left_child, right_child) for the node at (level, index).
+		
+		For a node that has only one child (e.g. an odd node in the tree), the right child
+		will be None.
+		
+		Parameters:
+			level (int): The current level of the node (level > 0).
+			index (int): The index of the node in that level.
+		
+		Returns:
+			A tuple (left_child_hash, right_child_hash) or (None, None) if no children exist.
+		"""
+		left = self.get_left_child(level, index)
+		right = self.get_right_child(level, index)
+		return (left, right)
 
 	def print_tree(self):
 		"""Prints the Merkle Tree in a structured format, aligning hashes properly above leaves."""
@@ -201,30 +277,45 @@ def checkProofFormat(proof):
 
 
 def generateProof(hashedValue):
+    # If hashedValue is bytes, convert it to a hex string.
+    if isinstance(hashedValue, bytes):
+        hashedValue = hashedValue.hex()
 
-	# Generates a "proof" for the provided hash value, in the
-	# format specified in the lab assignment:
+    # Find the index of hashedValue in the leaf level.
+    try:
+        current_index = merkle_tree.tree_levels[0].index(hashedValue)
+    except ValueError:
+        return None
 
-	# [ HMAC1, HMAC2, HMAC3, ..., rootHMAC, signature ]
+    proof = []
+    # Append the leaf itself.
+    proof.append(hashedValue)
 
+    # For each level from the leaves (level 0) up to (but not including) the root.
+    for level in range(0, len(merkle_tree.tree_levels) - 1):
+        nodes = merkle_tree.tree_levels[level]
+        # Determine the sibling:
+        if current_index % 2 == 0:
+            # For an even index, the sibling is the next element if it exists.
+            sibling = nodes[current_index + 1] if current_index + 1 < len(nodes) else None
+        else:
+            # For an odd index, the sibling is the previous element.
+            sibling = nodes[current_index - 1]
+        proof.append(sibling)
+        # Update current_index for the next level.
+        current_index = current_index // 2
 
-	# *** TODO: You will need to add code here, to generate a
-	# *** "proof" for the specified hashedValue. See the lab
-	# *** assignment doc for full details
- 
-	# generate the binary tree tree
-	tree = []
-	for i in range(len(values)):
-		tree.append(hash(values[i]))
+    # Append the root from the top level (the only element at that level).
+    proof.append(merkle_tree.tree_levels[-1][0])
+    
+    # Sign the root hash.
+    signature = sign(proof[-1])
+    proof.append(signature.hex())
+    
+    # check the proof
+    checkProofFormat(proof)
 
-	proof = [ '0'*64, '0'*1024 ]	# Placeholder, until you add your code
-
-	# Check that you've generated your proof in what looks like
-	# the correct format...
-
-	checkProofFormat(proof)
-
-	return proof
+    return proof
 
 
 def loadValues(filename):
@@ -271,8 +362,10 @@ def loadPublicKey(filename):
 	# *** TODO: You will need to add code here, to load the public key.
 	# *** See loadPrivateKey() for the general format of what you need
 	# *** to do.
+ 
+	# Placeholder, until you add your code	
+	publicKey = None
 
-	publicKey = None	# Placeholder, until you add your code
 
 	return publicKey
 
@@ -281,6 +374,8 @@ leaf_values = ['a', 'b', 'c']
 merkle_tree = MerkleTree(leaf_values)
 merkle_tree.print_tree()
 print("Root hash:", merkle_tree.get_root())
+print("Hash c", hash('c'))
+print("Hash a", hash('a'))
 
 # Load the values 
 loadValues(valuesFile)
