@@ -30,8 +30,11 @@ publicKeyFile	= 'publicKey.pem'
 values		= []
 hmacKey		= b'ECE568'
 
+# define hash function
 def hash(left, right=None):
+    
     global hmacKey
+    
     if right is not None:
         # For two arguments, assume they are hex strings representing binary hash values.
         try:
@@ -85,89 +88,6 @@ class MerkleTree:
 
 		return tree
 
-	def get_root(self):
-		"""Returns the Merkle Root."""
-		return self.tree_levels[-1][0] if self.tree_levels else None
-
-	def get_parent(self, level, index):
-		"""
-		Returns the parent's hash value for the node at (level, index).
-		
-		Parameters:
-			level (int): The current level of the node (0 = leaves).
-			index (int): The index of the node in that level.
-		
-		Returns:
-			The parent's hash (a hex string) if it exists, or None if the node is the root.
-		"""
-		# If the node is at the root level, it has no parent.
-		if level >= len(self.tree_levels) - 1:
-			return None
-		
-		parent_level = level + 1
-		parent_index = index // 2  # each parent's index is the integer division of child's index by 2.
-		return self.tree_levels[parent_level][parent_index]
-
-	def get_left_child(self, level, index):
-		"""
-		Returns the left child's hash value for the node at (level, index).
-		
-		Parameters:
-			level (int): The current level of the node (level > 0, since leaves have no children).
-			index (int): The index of the node in that level.
-		
-		Returns:
-			The left child's hash (a hex string) if it exists, or None.
-		"""
-		# Leaves (level 0) do not have children.
-		if level == 0:
-			return None
-		
-		child_level = level - 1
-		left_index = index * 2
-		if left_index < len(self.tree_levels[child_level]):
-			return self.tree_levels[child_level][left_index]
-		return None
-
-	def get_right_child(self, level, index):
-		"""
-		Returns the right child's hash value for the node at (level, index).
-		
-		Parameters:
-			level (int): The current level of the node (level > 0, since leaves have no children).
-			index (int): The index of the node in that level.
-		
-		Returns:
-			The right child's hash (a hex string) if it exists, or None.
-			(This can be None if the node was formed from a single odd child.)
-		"""
-		if level == 0:
-			return None
-		
-		child_level = level - 1
-		right_index = index * 2 + 1
-		if right_index < len(self.tree_levels[child_level]):
-			return self.tree_levels[child_level][right_index]
-		return None
-
-	def get_children(self, level, index):
-		"""
-		Returns a tuple of (left_child, right_child) for the node at (level, index).
-		
-		For a node that has only one child (e.g. an odd node in the tree), the right child
-		will be None.
-		
-		Parameters:
-			level (int): The current level of the node (level > 0).
-			index (int): The index of the node in that level.
-		
-		Returns:
-			A tuple (left_child_hash, right_child_hash) or (None, None) if no children exist.
-		"""
-		left = self.get_left_child(level, index)
-		right = self.get_right_child(level, index)
-		return (left, right)
-
 	def print_tree(self):
 		"""Prints the Merkle Tree in a structured format, aligning hashes properly above leaves."""
 		tree_levels_reversed = list(reversed(self.tree_levels))  # Start from root
@@ -218,7 +138,28 @@ def verifySignature(message, signature):
 	# *** TODO: You will need to add some code to verify the
 	# *** signature created in sign(), above
 
-	return False	# Returns False, for now, until you add your code
+	# If message is a string, convert it to bytes.
+	if isinstance(message, str):
+		message_bytes = message.encode('utf-8')
+	else:
+		message_bytes = message
+
+	# If signature is a string, convert it to bytes.
+	if isinstance(signature, str):
+		signature = bytes.fromhex(signature)
+  
+	# Verify the signature.
+	try:
+		publicKey.verify(
+			signature,
+			message_bytes,
+			padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
+						salt_length=padding.PSS.MAX_LENGTH),
+			hashes.SHA256()
+		)
+		return True
+	except InvalidSignature:
+		return False
 
 
 
@@ -363,22 +304,22 @@ def loadPublicKey(filename):
 	# *** See loadPrivateKey() for the general format of what you need
 	# *** to do.
  
-	# Placeholder, until you add your code	
-	publicKey = None
-
-
+	# Check that the file exists
+	if not os.path.isfile(filename):
+		print("ERROR: Could not find %s" % filename)
+		quit()
+	# Load the public key from the file
+	with open(filename, 'rb') as file:
+		publicKey = serialization.load_pem_public_key(
+			file.read(),
+			backend=default_backend())
 	return publicKey
-
-# Test building a Merkle Tree
-leaf_values = ['a', 'b', 'c']
-merkle_tree = MerkleTree(leaf_values)
-merkle_tree.print_tree()
-print("Root hash:", merkle_tree.get_root())
-print("Hash c", hash('c'))
-print("Hash a", hash('a'))
 
 # Load the values 
 loadValues(valuesFile)
+
+# Create a Merkle Tree
+merkle_tree = MerkleTree(values)
 
 # Load the private key
 privateKey = loadPrivateKey(privateKeyFile)
@@ -404,6 +345,13 @@ elif ( len(argv) == 2 ):
 
 	print(proof)
 
+	# print("./merkleTree.py \ ")
+	# for i in range(0,len(proof)):
+	# 	if ( proof[i] is None ):
+	# 		print("none \ ")
+	# 	else:
+	# 		print(proof[i] + " \ ")
+
 else:
 
 	# Verify the proof provided in the command arguments
@@ -423,12 +371,19 @@ else:
 
 	if ( checkProofFormat(suppliedProof) == False ):
 		quit()
-
-	# Calculate our own proof, based on the first hash
-
+  
 	# *** TODO: Add your code to check if the provided proof
 	# *** matches what you would calculate -- and check that
 	# *** the signature is valid
+ 
+	# Calculate our own proof based on the first hash.
+	hashedValue = suppliedProof[0]
+	computedProof = generateProof(hashedValue)
 
-	print(False)	# Placeholder, until you add your code
+	# Now, compare the two proofs (excluding the signature) and verify the signature.
+	# The root hash is the second-to-last element.
+	if computedProof[:-1] == suppliedProof[:-1] and verifySignature(computedProof[-2], suppliedProof[-1]):
+		print(True)
+	else:
+		print(False)	
 
