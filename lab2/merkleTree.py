@@ -30,6 +30,84 @@ publicKeyFile	= 'publicKey.pem'
 values		= []
 hmacKey		= b'ECE568'
 
+def hash(left, right=None):
+    global hmacKey
+    if right is not None:
+        # For two arguments, assume they are hex strings representing binary hash values.
+        try:
+            left_bytes = bytes.fromhex(left)
+            right_bytes = bytes.fromhex(right)
+        except ValueError:
+            # If conversion fails, fallback to UTF-8 encoding.
+            left_bytes = left.encode('UTF-8')
+            right_bytes = right.encode('UTF-8')
+        message_bytes = left_bytes + right_bytes
+    else:
+        # For a single argument, if it is a 64-character hex string,
+        # then convert it to binary. Otherwise, use UTF-8 encoding.
+        if len(left) == 64 and all(c in "0123456789abcdefABCDEF" for c in left):
+            message_bytes = bytes.fromhex(left)
+        else:
+            message_bytes = left.encode('UTF-8')
+    
+    h = hmac.new(hmacKey, message_bytes, sha256)
+    return h.hexdigest()
+
+# define merkle tree class
+class MerkleTree:
+	def __init__(self, values):
+		"""Initialize Merkle Tree with given leaf values."""
+		self.values = values
+		self.tree_levels = self.build_tree(values)  # Store full tree structure
+
+	def build_tree(self, values):
+		"""Builds a Merkle Tree from leaf values and returns levels of the tree.
+		For an odd number of nodes at a level, the last node is hashed alone,
+		rather than duplicating it.
+		"""
+		if not values:
+			return []
+
+		# Start with the leaf hashes
+		tree = [[hash(value) for value in values]]
+
+		# Build up the tree
+		while len(tree[-1]) > 1:
+			level = tree[-1]
+			parent_level = []
+
+			# Process pairs of nodes
+			for i in range(0, len(level) - 1, 2):
+				parent_level.append(hash(level[i], level[i + 1]))
+
+			# If there is an odd node out, hash it alone (without duplicating it)
+			if len(level) % 2 == 1:
+				parent_level.append(hash(level[-1]))
+
+			tree.append(parent_level)
+
+		return tree
+
+	def get_root(self):
+		"""Returns the Merkle Root."""
+		return self.tree_levels[-1][0] if self.tree_levels else None
+
+	def print_tree(self):
+		"""Prints the Merkle Tree in a structured format, aligning hashes properly above leaves."""
+		tree_levels_reversed = list(reversed(self.tree_levels))  # Start from root
+
+		max_width = len(self.tree_levels[0]) * 8 * 2  # Calculate maximum width for proper spacing
+
+		for i, level in enumerate(tree_levels_reversed):
+			indent = max_width // (len(level) + 1)  # Adjust spacing dynamically
+
+			# Print current level (shortened hashes in brackets)
+			print(" " * indent + "   ".join(f"[{h[:8]}]" for h in level))
+
+		# Print leaf values below
+		indent = max_width // (len(self.values) + 1)
+
+		print(" " * indent + "   ".join((f"'{val}'" + " " * (indent)) for val in self.values))
 
 def sign(message):
 
@@ -66,28 +144,6 @@ def verifySignature(message, signature):
 
 	return False	# Returns False, for now, until you add your code
 
-
-def hash(left, right=None):
-
-	# Concatenate "left" and "right" and return the resulting
-	# SHA256-based HMAC hash
-
-	global	hmacKey
-
-	# *** TODO: You will need to add some code to generate an HMAC
-	# *** value from the provided strings. You do not need to implement
-	# *** the HMAC function from scratch; you may call something like
-	# *** hmac.new(...)
-
-	# As a hint: a properly-calculated HMAC for the string 'a' should
-	# be 819539069f383c771e4fe42437e82539fcd7fde44217ea7a4c4fcb9eaf4b07b9.
-	# If you have a "left" and a "right", you should be hashing the
-	# combined string. (For example, if left='hello' and right='world',
-	# you should hash 'helloworld'.)
-
-	HMAC = b'\x00' * 32	 # Placeholder, until you add your code
-
-	return HMAC
 
 
 def checkProofFormat(proof):
@@ -155,6 +211,11 @@ def generateProof(hashedValue):
 	# *** TODO: You will need to add code here, to generate a
 	# *** "proof" for the specified hashedValue. See the lab
 	# *** assignment doc for full details
+ 
+	# generate the binary tree tree
+	tree = []
+	for i in range(len(values)):
+		tree.append(hash(values[i]))
 
 	proof = [ '0'*64, '0'*1024 ]	# Placeholder, until you add your code
 
@@ -215,6 +276,11 @@ def loadPublicKey(filename):
 
 	return publicKey
 
+# Test building a Merkle Tree
+leaf_values = ['a', 'b', 'c']
+merkle_tree = MerkleTree(leaf_values)
+merkle_tree.print_tree()
+print("Root hash:", merkle_tree.get_root())
 
 # Load the values 
 loadValues(valuesFile)
