@@ -321,6 +321,12 @@ loadValues(valuesFile)
 # Create a Merkle Tree
 merkle_tree = MerkleTree(values)
 
+# test the Merkle Tree
+
+# print("Merkle Tree:")
+# merkle_tree.print_tree()
+# print("Hash f", hash("f"))
+
 # Load the private key
 privateKey = loadPrivateKey(privateKeyFile)
 
@@ -345,6 +351,7 @@ elif ( len(argv) == 2 ):
 
 	print(proof)
 
+	# Uncomment to test the proof verification
 	# print("./merkleTree.py \ ")
 	# for i in range(0,len(proof)):
 	# 	if ( proof[i] is None ):
