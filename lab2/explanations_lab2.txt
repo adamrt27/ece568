@@ -1,0 +1,29 @@
+#Adam Taback, 1008945778, adam.taback@mail.utoronto.ca
+#Seung Jae Yang, 1007171613, seungjae.yang@mail.utoronto.ca
+
+Part 1:
+
+I started by building a merkle tree based on the values. To generate proofs, I 
+went through the tree, starting at the leaf corresponding to the hashedValue,
+and then went up the tree, adding the sibling of the current node to the proof, 
+then moving to the parent of the current node. I repeated this process until I
+reached the root of the tree. I appended the signature of the root to the proof
+and returned the proof. 
+
+To verify the proof, I started by retrieving the hashedValue from the provided 
+proof. I then generated the proof using the hashedValue and compared the 
+generated proof to the provided proof. If the two proofs were the same, 
+then I knew that the proof was valid. I checked the validity of the proof by
+checking the signature of the generated proof against the signature of the
+supplied proof.
+
+Part 2:
+
+I created a X509 certificate in this part. I started by creating a Certificate
+Signing Request (CSR) using the provided subject details. I then signed the CSR
+using the private key loaded from the provided PEM file. I printed the CSR in
+PEM format. I then loaded the Certificate Authority (CA) certificate and private
+key to generate an X509 certificate. I set the attributes of the certificate
+including the issuer, serial number, validity period, public key, and key
+extensions. I then signed the certificate with the CA key and printed the CA
+and signed certificates, forming a certificate chain.
