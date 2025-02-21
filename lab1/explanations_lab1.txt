@@ -19,14 +19,14 @@ Part 3:
 
 In this part, we take advantage of the buffer overflow vulnerability to execute our shellcode. 
 We create a buffer that contains our shellcode and the address of programName, the rest padded
-with NOPs. We place the &programName at RIP, so when the program returns, it will jump to the
+with NOPs. We place the &programName at return address, so when the program returns, it will jump to the
 shellcode and run it. This is because the shellcode is placed at the address of programName, 
-as the buffer is copied into programName. To place &programName at RIP, we calculated the offset,
-which is &programName - (address stored in RIP), using GDB.
+as the buffer is copied into programName. To place &programName at return address, we calculated the offset,
+which is &programName - (address stored in return address), using GDB.
 
 Our malicious buffer looks like this:
 
-&programName          RIP
+&programName          return address
     | shellcode | NOPs | &programName | NOPs |
 
 Part 4:
@@ -47,15 +47,15 @@ fake tag 1 (p):
 
 fake tag 2 (q):
     l: &p
-    r: &RIP
+    r: &return address
 
 Then when free is called on q the second time, it consolidates left, causing the following: 
 
-p->r = q->r == &RIP
-(q->r)->l == &RIP (as l is just offset 0) = p 
+p->r = q->r == &return address
+(q->r)->l == &return address (as l is just offset 0) = p 
 q = p. 
 
-This means when the program returns, it reads the address in RIP, goes to p, which jumps to the 
+This means when the program returns, it reads the address in return address, goes to p, which jumps to the 
 shellcode, and runs it.
 
 Part 5:
