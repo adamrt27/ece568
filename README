@@ -1,0 +1,10 @@
+# ECE568: Lab Assignments for ECE568: Computer Security
+
+Code for the following labs:
+
+* Lab1: Buffer Overflow & Software Vulnerabilities
+* Lab2: Encryption
+* Lab3: Web Security
+* Lab4: Network Security / Covert Channels
+
+See the pdfs in each lab folder for more information, as well as the READMEs/explanations.txt in each lab folder.
