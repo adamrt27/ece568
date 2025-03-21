@@ -1,0 +1,1 @@
+101 and ((select pin from credit where cc_number='2023110120231101')=3584);

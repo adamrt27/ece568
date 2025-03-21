@@ -1,0 +1,36 @@
+#Adam Taback, 1008945778, adam.taback@mail.utoronto.ca
+#Seung Jae Yang, 1007171613, seungjae.yang@mail.utoronto.ca
+
+# Part 1 Explanation
+This is an example of persistant XSS.
+
+Input this code into the search bar, and it generates a login form. The login form submits its
+contents to the server via a POST request.
+
+# Part 2 Explanation
+This script performs an XSS attack by extracting a secret value from an input field with name "secret".
+It then finds the form element, sets its message field with the stolen secret value and automatically 
+submits the form to a target endpoint, with the receiver set as "guest", which is the attacker. This 
+allows an attacker to steal sensitive data without user interaction.
+
+# Part 3 Explanation
+This script intercepts the submission of a form named "ece568-csrf-transfer" and sends a forged message to 
+the parent window. Then we add an event listener to the form such that on the transfer form submission, the 
+window posts the message to a desired user instead with certain values. In this case, we want to post a message 
+to the attack (guest) with money amount of 9999.
+
+# Part 4 Explanation
+The script exploits a CSRF token bypass by leveraging a CSS vulnerability and the same-origin policy. It first loads the legitimate transfer form in an iframe (frame1), where JavaScript extracts the hidden CSRFToken field. Once retrieved, the token is appended to a forged request in a second iframe (frame2), which submits an unauthorized transfer. This works because the browser allows scripts from the same origin to access content across iframes, bypassing CSRF protection despite token-based security measures.
+
+# Part 5 Explanation
+This is an example of SQL injection. ORing the condition '1'='1' will always return true, so the
+query will return all rows in the table. 
+
+# Part 6 Explanation
+The first line uses the UPDATE command to update the salary of user 101.
+The second line sets a trigger to update the email of any user that is inserted into the table to
+'ece568-24f@utoronto.ca'.
+
+# Part 7 Explanation
+This finds the pin of the credit card with the number '2023110120231101'. I checked different
+pins and found that the pin for this card is 3584.

