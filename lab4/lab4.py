@@ -4,6 +4,7 @@ import dns.message
 import dns.resolver
 import socket
 import sys
+import os
 
 def createDNSHeader(ID):
     # create 12 byte header
@@ -239,6 +240,8 @@ def parseDataMsg(msg):
         return None
         
 if __name__ == "__main__":
+    mailboxName = os.getlogin()
+    
     if len(sys.argv) == 2:
         # Write mode: break the message into chunks and send each chunk
         msg = sys.argv[1]
@@ -247,7 +250,7 @@ if __name__ == "__main__":
         
         for i, chunk in enumerate(chunks, 1):
             # Create hostname of the form: w.adamtaback.<sequence>.<chunk_data>.lab4.ece568.ca
-            hostname = writeHostname("adamtaback", i, chunk.decode())
+            hostname = writeHostname(mailboxName, i, chunk.decode())
             try:
                 response = dnsQuery(i, hostname, "A")
                 printResponseIP(response)
@@ -259,7 +262,7 @@ if __name__ == "__main__":
         seq = 1
         full_message = ""
         while True:
-            hostname = readHostname("adamtaback", seq)
+            hostname = readHostname(mailboxName, seq)
             try:
                 response = dnsQuery(seq, hostname, "CNAME")
             except Exception as e:
